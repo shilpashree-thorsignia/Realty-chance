@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
       // For login
       if (mode === "login") {
         // For login, we'll use either email or phone, whichever is provided
-        const success = await login(formData.email, formData.password, formData.phone);
+        const success = await login(formData.password, formData.phone);
         if (success) {
           toast.success("Login successful!");
           navigate("/");
@@ -171,6 +170,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
             </div>
           )}
 
+          {mode === "register" && (
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">
               Email Address
@@ -189,7 +189,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
               />
             </div>
           </div>
+          )}
 
+          
           {/* Phone Number Field - Added for both login and register */}
           <div>
             <label htmlFor="phone" className="block text-sm font-medium mb-1">
