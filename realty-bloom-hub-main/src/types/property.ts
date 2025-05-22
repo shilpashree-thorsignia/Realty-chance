@@ -28,6 +28,7 @@ export interface Property {
     phone: string;
     image: string;
   };
+  ownerId: string;
   amenities?: {
     name: string;
     icon?: string;
@@ -115,6 +116,7 @@ export interface Property {
     phone: string;
     email: string;
   };
+  ownerId: string; // Add this property
   isVerified?: boolean;
   isNewProject?: boolean;
   amenities?: {

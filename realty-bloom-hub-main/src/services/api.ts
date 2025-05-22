@@ -1,14 +1,16 @@
+// Create or update this file
+
 import axios from 'axios';
 
-// Create axios instance with default config
+// Create an axios instance
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request interceptor to include auth token
+// Add a request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
@@ -20,71 +22,38 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle token refresh if 401 error
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post('/api/auth/token/refresh/', {
-            refresh: refreshToken
-          });
-          
-          const { access } = response.data;
-          localStorage.setItem('auth_token', access);
-          
-          // Retry the original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
-
-// API endpoints
+// Property API
 export const propertyApi = {
-  getAll: (params = {}) => api.get('/properties/', { params }),
-  getById: (id) => api.get(`/properties/${id}/`),
-  getFeatured: () => api.get('/properties/featured/'),
-  getNewProjects: () => api.get('/properties/new-projects/'),
-  create: (data) => api.post('/properties/', data),
-  update: (id, data) => api.put(`/properties/${id}/`, data),
-  delete: (id) => api.delete(`/properties/${id}/`),
-  search: (params) => api.get('/properties/search/', { params }),
-  addToFavorites: (id) => api.post(`/properties/${id}/favorite/`),
-  removeFromFavorites: (id) => api.delete(`/properties/${id}/favorite/`),
+  getAll: () => api.get('/properties/'),
+  getById: (id: string) => api.get(`/properties/${id}/`),
+  getByOwner: (ownerId: string) => api.get(`/properties/owner/${ownerId}/`),
+  getByFilters: (filters = {}, headers = {}) => api.get('/properties/search/', { params: filters, headers }),
+  create: (data: any) => api.post('/properties/', data),
+  update: (id: string, data: any) => api.put(`/properties/${id}/`, data),
+  deleteProperty: (id: string) => api.delete(`/properties/${id}/`),
+  verifyProperty: (id: string) => api.post(`/properties/${id}/verify/`),
+  restoreProperty: (id: string) => api.post(`/properties/${id}/restore/`),
 };
 
+// Inquiry API
+export const inquiryApi = {
+  getAll: () => api.get('/inquiries/'),
+  getByUser: (userId: string) => api.get(`/inquiries/user/${userId}/`),
+  getByOwner: (ownerId: string) => api.get(`/inquiries/owner/${ownerId}/`),
+  create: (data: any) => api.post('/inquiries/', data),
+  approveInquiry: (id: string) => api.post(`/inquiries/${id}/approve/`),
+  rejectInquiry: (id: string) => api.post(`/inquiries/${id}/reject/`),
+};
+
+// Auth API
 export const authApi = {
-  login: (credentials) => api.post('/auth/login/', credentials),
-  register: (userData) => api.post('/auth/register/', userData),
-  verifyOtp: (data) => api.post('/auth/verify-otp/', data),
-  logout: () => api.post('/auth/logout/'),
-  getProfile: () => api.get('/auth/profile/'),
-  updateProfile: (data) => api.patch('/auth/profile/', data),
-  resetPassword: (email) => api.post('/auth/password-reset/', { email }),
-  confirmResetPassword: (data) => api.post('/auth/password-reset/confirm/', data),
-};
-
-export const userApi = {
-  getFavorites: () => api.get('/user/favorites/'),
-  getNotifications: () => api.get('/user/notifications/'),
-  updateNotificationSettings: (settings) => api.patch('/user/notification-settings/', settings),
+  login: (phone: string, password: string) => api.post('/api/auth/login/', { phone, password }),
+  register: (userData: any) => api.post('/auth/users/', userData),
+  verifyPhone: (phone: string, code: string) => api.post('/auth/verify-phone/', { phone, code }),
+  sendVerificationCode: (phone: string, purpose = 'registration') => 
+    api.post('/auth/send-verification-code/', { phone, purpose }),
+  resetPasswordWithPhone: (phone: string, code: string, password: string) => 
+    api.post('/auth/reset-password/', { phone, code, password }),
 };
 
 export default api;

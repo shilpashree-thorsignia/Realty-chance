@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Heart, Share, Phone, Mail, MapPin, Bed, Bath, Home, Calendar, Award, ArrowLeft } from "lucide-react";
 import { propertyApi } from "@/services/api";
 import { toast } from "sonner";
+import PropertyInquiryForm from "@/components/properties/PropertyInquiryForm";
+import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/layout/Header";
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [property, setProperty] = useState<any>(null);
+  const [similarProperties, setSimilarProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,6 +25,21 @@ const PropertyDetailPage: React.FC = () => {
         setError(null);
         const response = await propertyApi.getById(id);
         setProperty(response.data);
+        
+        // Fetch similar properties
+        if (response.data) {
+          // Safely destructure propertyType and city with fallbacks
+          const propertyType = response.data.propertyType || response.data.property_type || 'sale';
+          const city = response.data.city || '';
+          
+          const similarResponse = await propertyApi.getByFilters({}, {
+            property_type: propertyType,
+            city,
+            exclude_id: id,
+            limit: 4
+          });
+          setSimilarProperties(similarResponse.data);
+        }
       } catch (err: any) {
         console.error("Error fetching property:", err);
         setError(err.response?.data?.detail || "Failed to load property details");
@@ -201,43 +220,12 @@ const PropertyDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input 
-                    type="text" 
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
-                    placeholder="Your name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
-                    placeholder="Your email"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input 
-                    type="tel" 
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
-                    placeholder="Your phone number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Message</label>
-                  <textarea 
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
-                    rows={4}
-                    placeholder="I'm interested in this property..."
-                  ></textarea>
-                </div>
-                <Button type="submit" className="w-full">Contact Agent</Button>
-              </form>
+              <PropertyInquiryForm 
+                propertyId={property.id} 
+                propertyTitle={property.title} 
+              />
             </div>
-
+            
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold mb-4">Actions</h2>
               <div className="space-y-3">
@@ -254,6 +242,55 @@ const PropertyDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Similar Properties Section */}
+      {similarProperties.length > 0 && (
+        <div className="container mt-12 mb-8">
+          <h2 className="text-2xl font-bold mb-6">Similar Properties</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {similarProperties.map((similarProperty) => (
+              <Link 
+                to={`/property/${similarProperty.id}`} 
+                key={similarProperty.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              >
+                <div className="aspect-video relative">
+                  <img 
+                    src={similarProperty.images[0]} 
+                    alt={similarProperty.title} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 right-2">
+                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                      similarProperty.propertyType === "sale" ? "bg-secondary/20 text-secondary-foreground" : "bg-primary/20 text-primary"
+                    }`}>
+                      For {similarProperty.propertyType === "sale" ? "Sale" : "Rent"}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium truncate">{similarProperty.title}</h3>
+                  <div className="flex items-center text-sm text-muted-foreground mt-1">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    <span className="truncate">{similarProperty.address}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-primary font-bold">
+                      {formatPrice(similarProperty.price)}
+                    </p>
+                    <div className="flex items-center text-sm">
+                      <Bed className="h-3 w-3 mr-1" />
+                      <span className="mr-2">{similarProperty.beds}</span>
+                      <Bath className="h-3 w-3 mr-1" />
+                      <span>{similarProperty.baths}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
