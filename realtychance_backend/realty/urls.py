@@ -16,4 +16,6 @@ urlpatterns = [
     path('auth/login/', login_view, name='login'),
     path('auth/send-verification/', send_verification_code, name='send-verification'),
     path('auth/verify-phone/', verify_phone, name='verify-phone'),
+    # Removed conflicting/erroneous path:
+    # path('properties/', views.PropertyListCreateView.as_view(), name='property-list-create'),
 ]

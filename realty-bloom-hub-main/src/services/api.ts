@@ -24,15 +24,22 @@ api.interceptors.request.use(
 
 // Property API
 export const propertyApi = {
-  getAll: () => api.get('/properties/'),
-  getById: (id: string) => api.get(`/properties/${id}/`),
-  getByOwner: (ownerId: string) => api.get(`/properties/owner/${ownerId}/`),
-  getByFilters: (filters = {}, headers = {}) => api.get('/properties/search/', { params: filters, headers }),
-  create: (data: any) => api.post('/properties/', data),
-  update: (id: string, data: any) => api.put(`/properties/${id}/`, data),
-  deleteProperty: (id: string) => api.delete(`/properties/${id}/`),
-  verifyProperty: (id: string) => api.post(`/properties/${id}/verify/`),
-  restoreProperty: (id: string) => api.post(`/properties/${id}/restore/`),
+  getAll: (params = {}) => api.get('/api/properties/', { params }),
+  getById: (id: string) => api.get(`/api/properties/${id}/`),
+  getFeatured: () => api.get('/api/properties/featured/'),
+  getNewProjects: () => api.get('/api/new-projects/'),
+  // Add getByFilters if it's a distinct endpoint or logic
+  getByFilters: (params: any) => api.get('/api/properties/', { params }), // Or a different endpoint like '/api/properties/filter/'
+  create: (data: FormData) => api.post('/api/properties/', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  update: (id: string, data: FormData | any) => api.put(`/api/properties/${id}/`, data), // Consider if update also needs multipart/form-data
+  delete: (id: string) => api.delete(`/api/properties/${id}/`),
+  search: (params: any) => api.get('/api/properties/search/', { params }),
+  addToFavorites: (id: string) => api.post(`/api/properties/${id}/favorite/`),
+  removeFromFavorites: (id: string) => api.delete(`/api/properties/${id}/favorite/`),
 };
 
 // Inquiry API

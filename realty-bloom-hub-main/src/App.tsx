@@ -11,12 +11,16 @@ import AdminPropertyManagementPage from './pages/AdminPropertyManagementPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { FavoritesProvider } from './contexts/FavoritesContext';
+import PostPropertyPage from "./pages/PostPropertyPage"; // Make sure this import is correct
+// import { Routes, Route } from 'react-router-dom'; // Removed redundant import
+// Import your NewProjectsPage component
+// import NewProjectsPage from './pages/NewProjectsPage'; 
 
-const App: React.FC = () => {
+function App() {
   return (
-    <AuthProvider>
-      <FavoritesProvider>
-        <Router>
+    <Router>
+      <AuthProvider>
+        <FavoritesProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
@@ -57,11 +61,14 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               } 
             />
+            <Route path="/post-property" element={<PostPropertyPage />} />
+            {/* <Route path="/new-projects" element={<NewProjectsPage />} /> */}
+            {/* Add other routes as needed */}
           </Routes>
-        </Router>
-      </FavoritesProvider>
-    </AuthProvider>
+        </FavoritesProvider>
+      </AuthProvider>
+    </Router>
   );
-};
+}
 
 export default App;

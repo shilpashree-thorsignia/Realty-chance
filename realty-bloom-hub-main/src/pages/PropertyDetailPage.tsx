@@ -32,7 +32,8 @@ const PropertyDetailPage: React.FC = () => {
           const propertyType = response.data.propertyType || response.data.property_type || 'sale';
           const city = response.data.city || '';
           
-          const similarResponse = await propertyApi.getByFilters({}, {
+          // Use getAll or search, assuming it handles these filter parameters
+          const similarResponse = await propertyApi.getAll({ // Or propertyApi.search if that's more appropriate
             property_type: propertyType,
             city,
             exclude_id: id,

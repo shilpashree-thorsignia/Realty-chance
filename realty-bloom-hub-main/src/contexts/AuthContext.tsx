@@ -19,6 +19,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, phone: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  updateUserRole: (newRole: string) => Promise<void>; // Add this line
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setLoading(false);
   }, []);
+
+  const updateUserRole = async (newRole: string) => {
+    setLoading(true);
+    try {
+      if (user) {
+        // Here you would typically make an API call to update the user's role on the backend
+        // For now, we'll update it in the local state and localStorage
+        // Example: await api.updateUserRole(user.id, newRole);
+        
+        const updatedUser = { ...user, role: newRole };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log(`User role updated to: ${newRole}`); // For debugging
+      } else {
+        throw new Error("User not authenticated to update role");
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      // Potentially show a toast notification to the user
+      throw error; // Re-throw so the calling component can handle it if needed
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (password: string, phone: string) => {
     setLoading(true);
@@ -124,16 +149,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
+    <AuthContext.Provider value={{
       user, 
       isAuthenticated: !!user, 
       login, 
       register: async (name: string, email: string, password: string,phone:string) => {
+        // The register function provided to context should match the one defined above
+        // Or, if you intend to return the result of authApi.register directly:
+        // return register(name, email, password, phone); 
+        // For now, assuming it's meant to be void as per AuthContextType
         await register(name, email, password, phone);
       },
-      // verifyOtp,
       logout,
-      loading
+      loading,
+      updateUserRole // Add this to the provider value
     }}>
       {children}
     </AuthContext.Provider>
