@@ -55,12 +55,13 @@ export const inquiryApi = {
 // Auth API
 export const authApi = {
   login: (phone: string, password: string) => api.post('/api/auth/login/', { phone, password }),
-  register: (userData: any) => api.post('/auth/users/', userData),
-  verifyPhone: (phone: string, code: string) => api.post('/auth/verify-phone/', { phone, code }),
+  registerSeeker: (userData: any) => api.post('/api/register-seeker/', userData),
+  registerOwner: (userData: any) => api.post('/api/register-owner/', userData),
+  verifyPhone: (phone: string, code: string) => api.post('/api/auth/verify-phone/', { phone, code }),
   sendVerificationCode: (phone: string, purpose = 'registration') => 
-    api.post('/auth/send-verification-code/', { phone, purpose }),
+    api.post('/api/auth/send-verification-code/', { phone, purpose }),
   resetPasswordWithPhone: (phone: string, code: string, password: string) => 
-    api.post('/auth/reset-password/', { phone, code, password }),
+    api.post('/api/auth/reset-password/', { phone, code, password }),
 };
 
 export default api;

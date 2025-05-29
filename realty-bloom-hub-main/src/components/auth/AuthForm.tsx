@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail, Lock, User, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -18,7 +19,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
     password: "",
     confirmPassword: "",
     name: "",
-    phone: "", // Added phone field
+    phone: "",
+    role: "seeker" as "seeker" | "owner",
   });
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState("");
@@ -26,6 +28,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleRoleChange = (value: "seeker" | "owner") => {
+    setFormData({ ...formData, role: value });
   };
 
   const validateForm = () => {
@@ -54,42 +60,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
     e.preventDefault();
     
     try {
-      // Validate the form
       if (!validateForm()) return;
       
-      // For registration with OTP flow
       if (mode === "register" && !showOtp) {
-        const success = await register(formData.name, formData.email, formData.password, formData.phone);
-        if (success) {
-          setShowOtp(true);
-          toast.success("Registration successful! Please verify with OTP");
-        }
+        await register(
+          formData.name, 
+          formData.email, 
+          formData.password, 
+          formData.phone,
+          formData.role
+        );
+        setShowOtp(true);
+        toast.success("Registration successful! Please verify with OTP");
         return;
       }
       
-      // For OTP verification
       if (mode === "register" && showOtp) {
         if (!otp.trim() || otp.length !== 6) {
           toast.error("Please enter a valid 6-digit OTP");
           return;
         }
         
-        const success = await verifyOtp(otp);
-        if (success) {
+        const verified = await verifyOtp(otp);
+        if (verified) {
           toast.success("Account verified successfully!");
           navigate("/");
         }
         return;
       }
       
-      // For login
       if (mode === "login") {
-        // For login, we'll use either email or phone, whichever is provided
-        const success = await login(formData.password, formData.phone);
-        if (success) {
-          toast.success("Login successful!");
-          navigate("/");
-        }
+        await login(formData.password, formData.phone);
+        toast.success("Login successful!");
+        navigate("/");
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -150,24 +153,44 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
         // Regular login/register form
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="John Doe"
-                />
+            <>
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium mb-1">
+                  I want to
+                </label>
+                <Select
+                  value={formData.role}
+                  onValueChange={handleRoleChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="seeker">Look for properties</SelectItem>
+                    <SelectItem value="owner">List my properties</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
+
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="John Doe"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {mode === "register" && (

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
@@ -11,6 +10,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Layout from '../components/layout/Layout';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 // Make sure this is a function component (using function or arrow function syntax)
 const RegisterPage: React.FC = () => {
@@ -30,6 +30,9 @@ const RegisterPage: React.FC = () => {
       .regex(/[0-9]/, 'Password must contain at least one number')
       .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
+    role: z.enum(['owner', 'seeker'], {
+      required_error: "Please select a role",
+    }),
   }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
@@ -44,19 +47,26 @@ const RegisterPage: React.FC = () => {
       phone: '',
       password: '',
       confirmPassword: '',
+      role: 'seeker',
     },
   });
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      await authApi.register({
+      const userData = {
         full_name: values.name,
         email: values.email,
         phone: values.phone,
         password: values.password,
         re_password: values.confirmPassword,
-      });
+      };
+
+      if (values.role === 'owner') {
+        await authApi.registerOwner(userData);
+      } else {
+        await authApi.registerSeeker(userData);
+      }
       
       toast({
         title: 'Registration successful',
@@ -87,6 +97,27 @@ const RegisterPage: React.FC = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>I want to</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="seeker">Look for properties</SelectItem>
+                          <SelectItem value="owner">List my properties</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="name"

@@ -16,10 +16,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (password: string, phone: string) => Promise<any>;
-  register: (name: string, email: string, password: string, phone: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone: string, role?: 'seeker' | 'owner') => Promise<void>;
   logout: () => void;
   loading: boolean;
-  updateUserRole: (newRole: string) => Promise<void>; // Add this line
+  updateUserRole: (newRole: string) => Promise<void>;
+  verifyOtp: (otp: string) => Promise<boolean>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,31 +73,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (password: string, phone: string) => {
     setLoading(true);
     try {
-      const response = await fetch('api/auth/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone, password }),
-      });
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const data = await response.json();
-      const { user: userData, token, refresh_token } = data;
+      const response = await authApi.login(phone, password);
+      const { user: userData, access, refresh } = response.data;
       
       // Create a complete user object with token attached
       const authenticatedUser = {
         ...userData,
-        token
+        token: access
       };
       
       // Save user with token
       setUser(authenticatedUser);
       localStorage.setItem('user', JSON.stringify(authenticatedUser));
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem('auth_token', access);
+      localStorage.setItem('refresh_token', refresh);
       
       return authenticatedUser;
     } catch (error) {
@@ -106,20 +97,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string, phone: string) => {
+  const register = async (name: string, email: string, password: string, phone: string, role: 'seeker' | 'owner' = 'seeker') => {
     setLoading(true);
     try {
-      const response = await authApi.register({
+      const userData = {
         phone: phone,
         email: email,
         full_name: name,
         password: password,
-        re_password: password
-      });
+        password2: password
+      };
+
+      console.log('Sending registration data:', userData);
+
+      const response = role === 'owner' 
+        ? await authApi.registerOwner(userData)
+        : await authApi.registerSeeker(userData);
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      console.error('Error response:', error.response?.data);
       throw error;
     } finally {
       setLoading(false);
@@ -153,16 +151,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user, 
       isAuthenticated: !!user, 
       login, 
-      register: async (name: string, email: string, password: string,phone:string) => {
-        // The register function provided to context should match the one defined above
-        // Or, if you intend to return the result of authApi.register directly:
-        // return register(name, email, password, phone); 
-        // For now, assuming it's meant to be void as per AuthContextType
-        await register(name, email, password, phone);
-      },
+      register,
       logout,
       loading,
-      updateUserRole // Add this to the provider value
+      updateUserRole,
+      verifyOtp,
+      isLoading: loading
     }}>
       {children}
     </AuthContext.Provider>
